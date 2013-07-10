@@ -26,6 +26,36 @@ var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URL_DEFAULT = "http://arcane-gorge-7094.herokuapp.com/";
+var rest = require('./restler');
+
+var assertUrlExists = function(url) {
+    var data = "toto";
+    rest
+	.get(url.toString())
+	.on('complete', function(result, data) {
+	    if (result instanceof Error) {
+		console.log('Error: ' + result.message);
+		process.exit(1);
+	    } else {
+		var ok = checkUrl(result, CHECKSFILE_DEFAULT);
+		console.log(result);
+		return result;	
+	 }
+	});
+console.log(data);
+}
+
+var checkUrl = function(html, checksfile) {
+    $ = cheerio.load(html);
+    var checks = loadChecks(checksfile).sort();
+    var out = {};
+    for(var i in checks) {
+	var present = $(checks[i]).length > 0;
+        out[checks[i]] = present;
+        }
+    return out;
+}
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -65,10 +95,12 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-url, --url <url>', 'Your url', clone(assertUrlExists), URL_DEFAULT)
         .parse(process.argv);
+//    console.log(program.url);
     var checkJson = checkHtmlFile(program.file, program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+//    console.log(outJson);
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
